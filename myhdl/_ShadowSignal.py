@@ -194,13 +194,30 @@ class ConcatSignal(_ShadowSignal):
         ini = intbv(self._initval)[self._nrbits:]
         hi = self._nrbits
         for a in self._args:
+
             if isinstance(a, bool):
                 w = 1
             else:
                 w = len(a)
+
             lo = hi - w
+
+            if isinstance(a, _Signal) and not a.driven:
+                # Check that signal a is driven and raise a warning if not
+                from myhdl.conversion._misc import _error
+                from myhdl import ToVHDLWarning
+
+                if w == 1:
+                    warnings.warn(
+                        "%s: %s[%s]" % (_error.UndrivenSignal, self._name, lo),
+                        category=ToVHDLWarning)
+                else:
+                    warnings.warn(
+                        "%s: %s[%s:%s]" % (_error.UndrivenSignal, self._name, hi, lo),
+                        category=ToVHDLWarning)
+
             if w == 1:
-                if isinstance(a, _Signal):
+                if isinstance(a, _Signal) and a.driven:
                     if a._type == bool:  # isinstance(a._type , bool): <- doesn't work
                         lines.append("%s(%s) <= %s;" % (self._name, lo, a._name))
                     else:
@@ -208,7 +225,7 @@ class ConcatSignal(_ShadowSignal):
                 else:
                     lines.append("%s(%s) <= '%s';" % (self._name, lo, bin(ini[lo])))
             else:
-                if isinstance(a, _Signal):
+                if isinstance(a, _Signal) and a.driven:
                     lines.append("%s(%s-1 downto %s) <= %s;" % (self._name, hi, lo, a._name))
                 else:
                     lines.append('%s(%s-1 downto %s) <= "%s";' %
@@ -221,13 +238,28 @@ class ConcatSignal(_ShadowSignal):
         ini = intbv(self._initval)[self._nrbits:]
         hi = self._nrbits
         for a in self._args:
+
+            if isinstance(a, _Signal) and not a.driven:
+                # Check that signal a is driven and raise a warning if not
+                from myhdl.conversion._misc import _error
+                from myhdl import ToVerilogWarning
+
+                if w == 1:
+                    warnings.warn(
+                        "%s: %s[%s]" % (_error.UndrivenSignal, self._name, lo),
+                        category=ToVerilogWarning)
+                else:
+                    warnings.warn(
+                        "%s: %s[%s:%s]" % (_error.UndrivenSignal, self._name, hi, lo),
+                        category=ToVerilogWarning)
+
             if isinstance(a, bool):
                 w = 1
             else:
                 w = len(a)
             lo = hi - w
             if w == 1:
-                if isinstance(a, _Signal):
+                if isinstance(a, _Signal) and a.driven:
                     if a._type == bool:
                         lines.append("assign %s[%s] = %s;" % (self._name, lo, a._name))
                     else:
@@ -235,7 +267,7 @@ class ConcatSignal(_ShadowSignal):
                 else:
                     lines.append("assign %s[%s] = 'b%s;" % (self._name, lo, bin(ini[lo])))
             else:
-                if isinstance(a, _Signal):
+                if isinstance(a, _Signal) and a.driven:
                     lines.append("assign %s[%s-1:%s] = %s;" % (self._name, hi, lo, a._name))
                 else:
                     lines.append("assign %s[%s-1:%s] = 'b%s;" %
